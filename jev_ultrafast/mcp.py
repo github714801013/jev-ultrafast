@@ -5,7 +5,7 @@ state machine as separate MCP tools instead of running it to completion, because
 TYPE_TEXT needs a string that only the caller can supply: `predict` reports the field
 context, the caller answers with `act(text=...)`. No text-model key is required.
 
-Run: jev-mcp   (or: uv run --directory <repo> python -m jev_ultrafast.mcp)
+Run: jev-ultrafast-mcp   (or: uv run --directory <repo> python -m jev_ultrafast.mcp)
 """
 
 import os

@@ -96,7 +96,7 @@ uv run --env-file .env python examples/run.py \
 The loop is exposed one decision at a time over stdio, so the agent you already talk to can drive it and write the typed values itself. Nothing else calls a text model, so `TEXT_MODEL_API_KEY` is not needed here.
 
 ```bash
-claude mcp add jev -- uv run --directory "$PWD" jev-mcp
+claude mcp add jev-browser-mcp -- uv run --directory "$PWD" jev-ultrafast-mcp
 ```
 
 | Tool | What it does |

@@ -9,7 +9,7 @@ dependencies = ["browser-harness==0.1.13", "httpx[http2]>=0.28,<1", "mcp>=1.2,<2
 
 [project.scripts]
 jev = "jev_ultrafast.demo:main"
-jev-mcp = "jev_ultrafast.mcp:main"
+jev-ultrafast-mcp = "jev_ultrafast.mcp:main"
 
 [build-system]
 requires = ["hatchling"]
