@@ -91,6 +91,24 @@ uv run --env-file .env python examples/run.py \
 
 `uv run --env-file .env python examples/flights.py --keep-open` performs the flight search, checks the actual route/date/results, and saves its trace. It does not select or book a flight.
 
+## Use it as an MCP server
+
+The loop is exposed one decision at a time over stdio, so the agent you already talk to can drive it and write the typed values itself. Nothing else calls a text model, so `TEXT_MODEL_API_KEY` is not needed here.
+
+```bash
+claude mcp add jev -- uv run --directory "$PWD" jev-mcp
+```
+
+| Tool | What it does |
+| --- | --- |
+| `browser_start(url, goal)` | Opens the page and begins a run. One run at a time. |
+| `browser_predict()` | Chooses the operation and target. For `TYPE_TEXT` it returns `needs_text` with the field context. |
+| `browser_act(text)` | Executes the prediction. Pass `text` when the prediction asked for it. |
+| `browser_status()` | The goal, current page, and executed steps. |
+| `browser_stop()` | Closes the tab. |
+
+A page that changed between the prediction and the execution is re-predicted instead of executed, and nothing is typed on a page that moved. `browser_act` reports a missing string rather than guessing one.
+
 ## Why it moves
 
 - **One request per decision cycle.** Operation and target heads share the same observed state.
