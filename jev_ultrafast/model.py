@@ -17,6 +17,11 @@ def typesafe_base():
     return os.environ.get("TYPESAFE_BASE_URL", "https://api.typesafe.ai").rstrip("/")
 
 
+def compact_prompts():
+    """Use short instructions for small local decision checkpoints such as Laya."""
+    return os.environ.get("TYPESAFE_COMPACT_PROMPTS", "").lower() in {"1", "true", "yes"}
+
+
 def post_json(url, key, body):
     for attempt in range(3):
         try:
@@ -92,9 +97,24 @@ def choose(state, goal, history):
     }
     operations = {key: labels[key] for key in targets}
     operations.update({key: value["label"] for key, value in controls.items()})
+    # A WAIT that produced no visible change is evidence against waiting again. The hosted
+    # Jev model follows this from NEXT_ACTION; local decision models may instead collapse
+    # onto the safe-looking WAIT label, so enforce the same policy in code.
+    if history and history[-1].get("kind") == "wait" and history[-1].get("page_changed") is False:
+        operations.pop("WAIT", None)
     operations.update(DONE="Every requirement is visibly satisfied.", BLOCKED="No supported operation can progress.")
+    operation_instructions = {"goal": goal, "rules": NEXT_ACTION}
+    target_rules = [NEXT_ACTION, TARGET]
+    if compact_prompts():
+        operation_instructions = {
+            "goal": goal,
+            "rule": "Choose the single next operation that immediately advances the goal. "
+                    "Choose WAIT only if no useful visible action exists. "
+                    "Choose DONE only if the goal is visibly complete.",
+        }
+        target_rules = "Choose the visible element that best advances the goal."
     questions = {
-        "operation": {"type": "choice", "criteria": operations, "instructions": {"goal": goal, "rules": NEXT_ACTION}}
+        "operation": {"type": "choice", "criteria": operations, "instructions": operation_instructions}
     }
     for operation, candidates in targets.items():
         questions[operation.lower() + "_target"] = {
@@ -107,7 +127,7 @@ def choose(state, goal, history):
                 }
                 for index, a in candidates.items()
             },
-            "instructions": {"goal": goal, "operation": operation, "rules": [NEXT_ACTION, TARGET]},
+            "instructions": {"goal": goal, "operation": operation, "rules": target_rules},
         }
     body = {
         "model": os.environ.get("TYPESAFE_MODEL", "jev-latest"),

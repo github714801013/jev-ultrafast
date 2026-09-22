@@ -74,6 +74,44 @@ def test_one_index_per_node_with_operation_specific_targets():
     assert "WAIT" in controls
 
 
+def test_wait_is_removed_after_it_had_no_visible_effect(monkeypatch):
+    captured = {}
+
+    def post(_url, _key, body):
+        captured.update(body["questions"]["operation"]["criteria"])
+        return {
+            "model": "test",
+            "answers": {
+                "operation": choice(body["questions"]["operation"]["criteria"], "CLICK"),
+                "click_target": choice(body["questions"]["click_target"]["criteria"], "1"),
+            },
+        }
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", "test")
+    monkeypatch.setattr(model, "post_json", post)
+    model.choose(page(), "Find a book", [{"kind": "wait", "page_changed": False}])
+    assert "WAIT" not in captured
+
+
+def test_wait_remains_after_a_page_change(monkeypatch):
+    captured = {}
+
+    def post(_url, _key, body):
+        captured.update(body["questions"]["operation"]["criteria"])
+        return {
+            "model": "test",
+            "answers": {
+                "operation": choice(body["questions"]["operation"]["criteria"], "CLICK"),
+                "click_target": choice(body["questions"]["click_target"]["criteria"], "1"),
+            },
+        }
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", "test")
+    monkeypatch.setattr(model, "post_json", post)
+    model.choose(page(), "Find a book", [{"kind": "wait", "page_changed": True}])
+    assert "WAIT" in captured
+
+
 def test_all_heads_are_one_request_and_only_matching_head_executes(monkeypatch):
     calls = []
 
