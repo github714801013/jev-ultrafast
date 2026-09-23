@@ -127,6 +127,34 @@ def main():
         browser.call("Page.navigate", url="about:blank")
         assert not browser.fresh(page, field)
         passed.append("navigation invalidates the old document")
+
+        child_html = """<!doctype html><meta charset='utf-8'>
+        <button id='add' onclick="document.body.dataset.clicked='yes'">Add approval</button>
+        <label>Reason <input id='reason' aria-label='Reason'></label>
+        <select id='kind' aria-label='Kind'><option value='overtime'>Overtime</option>
+          <option value='travel'>Travel</option></select>"""
+        parent_html = f"""<!doctype html><meta charset='utf-8'>
+        <button>Outer action</button>
+        <iframe src='data:text/html,{quote(child_html)}' style='width:500px;height:300px'></iframe>"""
+        browser.call("Page.navigate", url="data:text/html," + quote(parent_html))
+        page = browser.observe(screenshot=False)
+        frame_button = next(a for a in page["actions"] if a["label"] == "Add approval")
+        assert frame_button["frame_path"] == [0]
+        browser.act(frame_button, page)
+        frame = browser._frames[frame_button["frame_id"]]
+        assert browser._evaluate_frame(frame, "document.body.dataset.clicked") == "yes"
+        passed.append("nested frame button is discovered and clicked in its frame")
+
+        page = browser.observe(screenshot=False)
+        frame_field = next(a for a in page["actions"] if a["label"] == "Reason")
+        browser.act(frame_field, page, text="核数据")
+        frame = browser._frames[frame_field["frame_id"]]
+        assert browser._evaluate_frame(frame, "document.querySelector('#reason').value") == "核数据"
+        page = browser.observe(screenshot=False)
+        frame_select = next(a for a in page["actions"] if a["kind"] == "select")
+        browser.act(frame_select, page)
+        assert browser._evaluate_frame(frame, "document.querySelector('#kind').value") == "travel"
+        passed.append("nested frame input and select use the frame context")
     finally:
         browser.close()
     print("\n".join(passed))

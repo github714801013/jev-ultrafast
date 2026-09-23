@@ -64,11 +64,13 @@ def action_space(actions):
         if kind not in operations:
             controls[action["id"].upper()] = action
             continue
-        node = action["node"]
+        node = (action.get("frame_token"), action["node"])
         if node not in indices:
             index = str(len(elements) + 1)
             indices[node] = index
             element = {k: action[k] for k in ("role", "value", "checked", "selected", "expanded") if k in action}
+            if "frame_path" in action:
+                element["frame_path"] = action["frame_path"]
             element.update(index=index, label=action["label"].split(" → ")[0], operations=[])
             if kind == "select":
                 element["value"] = action.get("current_value", "")
@@ -123,7 +125,7 @@ def choose(state, goal, history):
                 index: {
                     "element": f"[{index}] {a['label']}",
                     "current_value": a.get("current_value", a.get("value", "")),
-                    **{k: a[k] for k in ("role", "checked", "selected", "expanded") if k in a},
+                    **{k: a[k] for k in ("role", "checked", "selected", "expanded", "frame_path") if k in a},
                 }
                 for index, a in candidates.items()
             },

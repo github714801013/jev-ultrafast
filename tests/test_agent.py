@@ -74,6 +74,22 @@ def test_one_index_per_node_with_operation_specific_targets():
     assert "WAIT" in controls
 
 
+def test_action_space_keeps_same_node_separate_across_frames():
+    actions = [
+        {"id": "e1", "kind": "click", "label": "Add approval", "role": "button",
+         "node": 1, "frame_token": "root:1", "frame_path": []},
+        {"id": "e2", "kind": "click", "label": "Add approval", "role": "button",
+         "node": 1, "frame_token": "child:1", "frame_path": [0]},
+    ]
+
+    elements, targets, _ = model.action_space(actions)
+
+    assert len(elements) == 2
+    assert [target["id"] for target in targets["CLICK"].values()] == ["e1", "e2"]
+    assert elements[0]["frame_path"] == []
+    assert elements[1]["frame_path"] == [0]
+
+
 def test_wait_is_removed_after_it_had_no_visible_effect(monkeypatch):
     captured = {}
 
