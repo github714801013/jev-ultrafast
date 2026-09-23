@@ -107,6 +107,8 @@ claude mcp add jev-browser-mcp -- uv run --directory "$PWD" jev-ultrafast-mcp
 | `browser_status()` | The goal, current page, and executed steps. |
 | `browser_stop()` | Closes the tab. |
 
+A run is stateful: call `browser_start` exactly once at the beginning of a task, then repeat `browser_predict` → `browser_act` until the goal is reached. **Do not call `browser_start` again during the same task**—it closes the active tab and resets the Jev session. Use `browser_status` to inspect the current run.
+
 A page that changed between the prediction and the execution is re-predicted instead of executed, and nothing is typed on a page that moved. `browser_act` reports a missing string rather than guessing one.
 
 ## Why it moves

@@ -5,6 +5,10 @@ state machine as separate MCP tools instead of running it to completion, because
 TYPE_TEXT needs a string that only the caller can supply: `predict` reports the field
 context, the caller answers with `act(text=...)`. No text-model key is required.
 
+The tools are stateful: call `browser_start` once at the beginning of a task, then use
+`browser_predict` and `browser_act` repeatedly. Do not call `browser_start` again for the
+same task; it resets the current browser run. `browser_status` reports the active task.
+
 Run: jev-ultrafast-mcp   (or: uv run --directory <repo> python -m jev_ultrafast.mcp)
 """
 
@@ -72,7 +76,7 @@ def _decision_payload(agent, extra=None):
 
 @server.tool()
 def browser_start(url: str, goal: str) -> dict:
-    """Open a page and begin a run. One run at a time; an active run is closed first."""
+    """Start a new browser task. Call once per task; calling again resets the active run."""
     global _run
     load_environment()
     if _run is not None:
@@ -91,7 +95,7 @@ def browser_start(url: str, goal: str) -> dict:
 
 @server.tool()
 def browser_predict() -> dict:
-    """Choose the next operation and target. Returns needs_text with the field context for TYPE_TEXT."""
+    """Choose the next operation. Repeat after each browser_act; do not call browser_start again."""
     agent = _require_run()
     agent.command("predict")
     return _decision_payload(agent)

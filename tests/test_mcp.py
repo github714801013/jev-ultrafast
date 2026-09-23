@@ -66,3 +66,27 @@ def test_environment_loading_fills_what_is_missing(tmp_path, monkeypatch):
 
 def test_environment_loading_ignores_a_missing_file(tmp_path):
     stepper.load_environment(tmp_path / "absent.env")
+
+
+def test_browser_start_replaces_the_active_run(monkeypatch):
+    """Starting is an explicit reset; callers must not use it for another step."""
+    first = SimpleNamespace(
+        state={"status": "ready", "page": {"url": "https://one.test/", "title": "One", "actions": []}}
+    )
+    second = SimpleNamespace(
+        state={"status": "ready", "page": {"url": "https://two.test/", "title": "Two", "actions": []}}
+    )
+    closed = []
+    first.close = lambda: closed.append("first")
+    second.close = lambda: closed.append("second")
+    created = iter([first, second])
+    monkeypatch.setattr(stepper, "Agent", lambda _url, _goal: next(created))
+    monkeypatch.setattr(stepper, "load_environment", lambda: None)
+    stepper._run = None
+
+    stepper.browser_start("https://one.test/", "one")
+    stepper.browser_start("https://two.test/", "two")
+
+    assert closed == ["first"]
+    assert stepper._run is second
+    stepper._run = None
